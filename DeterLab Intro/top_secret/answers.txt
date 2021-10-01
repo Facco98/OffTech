@@ -1,0 +1,10 @@
+/etc/wuer136intro-4.JPG The fly
+/dev/136intro-2jjaj.JPEG Godzilla
+/.hidden/asdf136Intro-5kqlw.jpeg 2001 a space odyssey
+/var/log/136intro-3.jpg It came from outer space
+/usr/share/pixmaps/xbzf136INTRO-1.jpg Forbidden planet
+
+/var is a standard subdirectory of the root directory in Linux and other Unix-like operating systems that contains files to which the system writes data during the course of its operation.
+
+/dev is the location of special or device files.
+model name	: Intel(R) Xeon(TM) CPU 3.00GHz
