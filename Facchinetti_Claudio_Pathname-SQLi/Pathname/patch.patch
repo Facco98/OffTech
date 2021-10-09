@@ -1,0 +1,128 @@
+--- original.pl	2021-10-03 14:43:02.000000000 +0200
++++ sanitized.pl	2021-10-01 17:10:36.000000000 +0200
+@@ -2,6 +2,7 @@
+ 
+ use CGI qw(:standard);
+ use CGI::Carp qw(fatalsToBrowser);
++use File::Spec;
+ use strict;
+ 
+ # Barbazzo Fernap barbazzo@gue.com
+@@ -30,20 +31,25 @@
+ # output: fills global AA 'labels' with nice names for memos based on
+ # 	the pathname of the memo
+ 
+-sub list_memo_selector {
++# GET ALL THE USER MEMOS
++# the star '*' is a wildcard. This is a "glob" operator -- it finds
++# all the files in the 'memo' directory in any home directory located
++# in /home. E.g., it finds files in /home/foo/memo/ and /home/bar/memo
++# and stores them in a 0-indexed array (Perl arrays start with @).
++my @memos = </home/*/memo/*>; # all regular users
++
++#Now we can read it as they are readable by everyone
++push (@memos, </root/memo/*>); # special memos from root
++
++push (@memos, </root/memo/*>); # special memos from root
++
++
++sub begins_with
++{
++    return substr($_[0], 0, length($_[1])) eq $_[1];
++}
+ 
+-	# GET ALL THE USER MEMOS
+-	# the star '*' is a wildcard. This is a "glob" operator -- it finds
+-	# all the files in the 'memo' directory in any home directory located
+-	# in /home. E.g., it finds files in /home/foo/memo/ and /home/bar/memo
+-	# and stores them in a 0-indexed array (Perl arrays start with @).
+-	my @memos = </home/*/memo/*>; # all regular users
+-
+-	# GET ROOT'S MEMOS
+-	# root can also have memos in /home/root/. The next glob operator
+-	# "pushes" root's memos onto the @memos array. This script (memo.cgi)
+-	# needs SUID-root permissions to access files in /root/memo.
+-	push (@memos, </root/memo/*>); # special memos from root
++sub list_memo_selector {
+ 
+ 
+ 	my $memo;
+@@ -98,38 +104,46 @@
+ 	# else, there is a memo parameter from the user. Figure out who wrote
+ 	# the memo by looking at the path, and print the memo out.
+ 	list_memo_selector();
+-	my $memo = param('memo');
+-	my $author = "root";
+-	my @stat = stat $memo;
+-	my $date = localtime $stat[9];
+-	if ($memo =~ m#^/home/([^/]+)/.*$#) {
+-		$author = $1;
+-	}
+-	print "<hr>\n";
+-	print "<blockquote>";
+-	print '<table border=1><tr><td>';
+-	print "<center><b>$labels{$memo}</b></center>";
+-	print '</td></tr>';
+-	print "<tr><td>\n<p>";
+-	print "<b>Author:</b> $author<br />\n";
+-	print "<b>Subject:</b> $labels{$memo}<br />";
+-	print "<b>Date:</b> $date<br />\n";
+-	print "\n</p></td></tr>\n";
+-	print "<tr><td><p>&nbsp;</p>\n";
+-	print "<blockquote><p>\n";
+-
+-	open (MEMO, $memo); # open the memo file
+-
+-	my $line;
+-	foreach $line (<MEMO>) {
+-		# for every line in the memo, print it out
+-		$line =~ s#\n$#</p><p>#; # replace newline characters with HTML
+-		print "$line\n";
+-	}
+-	print "</p></blockquote>\n";
+-	print '<p>&nbsp;</p></td></tr></table>';
+-	print "</blockquote>";
+-	print "<hr>\n";
++
++  #Put memo to absolute file, resolving .., . etc
++	my $memo = File::Spec -> rel2abs(param('memo'));
++  #Check if it is one of the allowed memos
++	if( $memo ~~ @memos ){
++  	my $author = "root";
++  	my @stat = stat $memo;
++  	my $date = localtime $stat[9];
++  	if ($memo =~ m#^/home/([^/]+)/.*$#) {
++  		$author = $1;
++  	}
++  	print "<hr>\n";
++  	print "<blockquote>";
++  	print '<table border=1><tr><td>';
++  	print "<center><b>$labels{$memo}</b></center>";
++  	print '</td></tr>';
++  	print "<tr><td>\n<p>";
++  	print "<b>Author:</b> $author<br />\n";
++  	print "<b>Subject:</b> $labels{$memo}<br />";
++  	print "<b>Date:</b> $date<br />\n";
++  	print "\n</p></td></tr>\n";
++  	print "<tr><td><p>&nbsp;</p>\n";
++  	print "<blockquote><p>\n";
++
++  	open (MEMO, $memo); # open the memo file
++
++  	my $line;
++  	foreach $line (<MEMO>) {
++  		# for every line in the memo, print it out
++  		$line =~ s#\n$#</p><p>#; # replace newline characters with HTML
++  		print "$line\n";
++  	}
++  	print "</p></blockquote>\n";
++  	print '<p>&nbsp;</p></td></tr></table>';
++  	print "</blockquote>";
++  	print "<hr>\n";
++  } else{
++    # If it's not, then just report error: file not found
++    print "<br>\nThe selected memo does not exist\n<br>"
++  }
+ }
+ 
+ # print some boilerplate instructions and quit
