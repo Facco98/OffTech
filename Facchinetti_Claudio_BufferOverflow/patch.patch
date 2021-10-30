@@ -1,0 +1,106 @@
+--- original.c	2021-10-13 20:06:42.000000000 +0200
++++ patched.c	2021-10-13 20:38:49.000000000 +0200
+@@ -71,8 +71,20 @@
+ 	return ret;
+ }
+ 
++void send_wrap(int sockfd, char* str){
++
++	int s_bytes = send(sockfd, str, strlen(str), 0);
++	if( s_bytes < 0 ){
++
++		perror("send");
++		pthread_exit(NULL);
++
++	}
++
++}
++
+ char *get_header(const httpreq_t *req, const char* headername) {
+-    char *hdrptr;
++	char *hdrptr;
+ 	char *hdrend;
+ 	char *retval = NULL;
+ 
+@@ -85,14 +97,18 @@
+ 		hdrptr += strlen(searchstr);
+ 		if (hdrend = strstr(hdrptr, "\r\n")) {
+ 			char hdrval[1024]; // temporary return value
+-			memcpy((char *)hdrval, hdrptr, (hdrend - hdrptr));
+-			hdrval[hdrend - hdrptr] = '\0'; // tack null onto end of header value
++			strncpy((char *)hdrval, hdrptr, 1024);
++			if( (hdrend - hdrptr) > 1024 ){
++				hdrval[1023] = '\0';
++			} else {
++				hdrval[hdrend - hdrptr] = '\0'; // tack null onto end of header value
++			}
+ 			int hdrvallen = strlen(hdrval);
+ 			retval = (char *)malloc((hdrvallen + 1) * sizeof(char)); // malloc a space for retval
+ 			strcpy(retval, (char *)hdrval);
+ 		} else {
+ 			retval = (char *)malloc((strlen(hdrptr) + 1) * sizeof(char)); //
+-			strcpy(retval, hdrptr);
++			strncpy(retval, hdrptr, 1024);
+ 		}
+ 	}
+ 
+@@ -250,8 +266,6 @@
+ 		statcode = 500;
+ 	}
+ 
+-
+-	sendmessage[0] = '\0';
+ 	if (strcmp(req->version, "0.9") != 0) { // full request
+ 		char *ext; // file extension
+ 		time_t curtime;
+@@ -292,34 +306,26 @@
+ 		}
+ 
+ 		time(&curtime); // time for Date: header
+-		strcat(sendmessage, "HTTP/1.0 ");
+-		strcat(sendmessage, status(statcode));
+-		strcat(sendmessage, "\r\nDate: ");
+-		strncat(sendmessage, asctime(gmtime(&curtime)), 24);
+-		strcat(sendmessage, "\r\nServer: Frobozz Magic Software Company Webserver v.002");
+-		strcat(sendmessage, "\r\nConnection: close");
+-		strcat(sendmessage, "\r\nContent-Type: ");
+-		strcat(sendmessage, contype(ext));
+-		strcat(sendmessage, "\r\n\r\n");
++		send_wrap(sockfd, "HTTP/1.0 ");
++        send_wrap(sockfd, status(statcode));
++        send_wrap(sockfd, "\r\nDate: ");
++        send_wrap(sockfd, asctime(gmtime(&curtime)));
++        send_wrap(sockfd, "\r\nServer: Frobozz Magic Software Company Webserver v.002");
++        send_wrap(sockfd, "\r\nConnection: close");
++        send_wrap(sockfd, "\r\nContent-Type: ");
++        send_wrap(sockfd, contype(ext));
++        send_wrap(sockfd, "\r\n\r\n");
+ 
+ 	}
+ 
+ 	if (statcode != 200) {
+-		strcat(sendmessage, "<html><head><title>");
+-		strcat(sendmessage, status(statcode));
+-		strcat(sendmessage, "</title></head><body><h2>HTTP/1.0</h2><h1>");
+-		strcat(sendmessage, status(statcode));
+-		strcat(sendmessage, "</h1><h2>URI: ");
+-		strcat(sendmessage, path);
+-		strcat(sendmessage, "</h2></body></html>");
+-	}
+-
+-	if (sendmessage[0] != '\0') {
+-		// send headers as long as there are headers to send
+-		if (send(sockfd, sendmessage, strlen(sendmessage), 0) < 0) {
+-			perror("send");
+-			pthread_exit(NULL);
+-		}
++        send_wrap(sockfd, "<html><head><title>");
++        send_wrap(sockfd, status(statcode));
++        send_wrap(sockfd, "</title></head><body><h2>HTTP/1.0</h2><h1>");
++        send_wrap(sockfd, status(statcode));
++        send_wrap(sockfd, "</h1><h2>URI: ");
++        send_wrap(sockfd, path);
++        send_wrap(sockfd, "</h2></body></html>");
+ 	}
+ 
+ 	if (statcode == 200 && (strcmp(req->method, "HEAD") != 0)) {

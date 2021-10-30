@@ -1,0 +1,23 @@
+set ns [new Simulator]
+source tb_compat.tcl
+
+#Create the topology nodes
+set proggroup [$ns event-group]
+foreach node {client server attacker router} {
+   #Create new node
+   set $node [$ns node]
+   #Define the OS image
+   tb-set-node-os [set $node] Ubuntu-EDU
+}
+
+set atServLink [$ns duplex-link $attacker $server 1000Mb 0ms DropTail]
+set clServLink [$ns duplex-link $client $server 1000Mb 0ms DropTail]
+
+tb-set-ip-link $attacker $atServLink 5.0.0.1
+tb-set-ip-link $server $atServLink 5.0.0.2
+tb-set-ip-link $client $clServLink 4.0.0.1
+tb-set-ip-link $server $clServLink 4.0.0.2
+
+
+$ns rtproto Manual
+$ns run
