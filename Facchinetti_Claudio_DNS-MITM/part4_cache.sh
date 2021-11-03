@@ -1,7 +1,7 @@
 #!/bin/sh
 
-echo "managed-keys{ \\
-.google.com initial-key \"<paste_key_here>\"; \\
+echo -e "managed-keys{\n
+google.com. initial-key \"<paste_key_here>\";\n
 };" | sudo tee -a /etc/bind/managed-keys
 
 dig +dnssec dig google.com dnskey

